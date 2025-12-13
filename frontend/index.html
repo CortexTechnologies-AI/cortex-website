@@ -246,7 +246,7 @@
             <span class="mobile-close" id="tetrisMobileClose">&times;</span>
         </div>
         <div class="tetris-mobile-game" id="tetrisMobileGame">
-            <canvas id="tetris-mobile-canvas"></canvas><div class="tetris-start-overlay" id="tetrisStartOverlay"><button id="tetrisStartBtn">▶ START</button></div>
+            <canvas id="tetris-mobile-canvas"></canvas><div class="tetris-start-overlay" id="tetrisStartOverlay"><button id="tetrisStartBtn" onclick="if(window.tetrisMobileGame){document.getElementById('tetrisStartOverlay').classList.add('hidden');window.tetrisMobileGame.start()}">▶ START</button></div>
         </div>
         <div class="tetris-mobile-controls">
             <div class="tetris-ctrl-left"><button id="mobileLeft">&#9664;</button></div>
@@ -291,7 +291,7 @@
         piBtn.addEventListener("click",()=>arcadeOverlay.classList.add("active"));
         arcadeClose.addEventListener("click",()=>arcadeOverlay.classList.remove("active"));
         // Tetris card - detect mobile and show appropriate overlay
-        tetrisCard.addEventListener("click",()=>{arcadeOverlay.classList.remove("active");if(window.innerWidth<=768){tetrisMobileWrapper.classList.add("active");setTimeout(()=>{if(!window.tetrisMobileGame){window.tetrisMobileGame=new TetrisMobileGame();document.getElementById("tetrisStartBtn").addEventListener("touchend",(e)=>{e.preventDefault();document.getElementById("tetrisStartOverlay").classList.add("hidden");window.tetrisMobileGame.start()});document.getElementById("tetrisStartBtn").addEventListener("click",()=>{document.getElementById("tetrisStartOverlay").classList.add("hidden");window.tetrisMobileGame.start()})}document.getElementById("tetrisStartOverlay").classList.remove("hidden")},50)}else{gameOverlay.classList.add("active");window.tetrisGame?window.tetrisGame.reset():window.tetrisGame=new TetrisGame()}});
+        tetrisCard.addEventListener("click",()=>{arcadeOverlay.classList.remove("active");if(window.innerWidth<=768){tetrisMobileWrapper.classList.add("active");setTimeout(()=>{if(!window.tetrisMobileGame){window.tetrisMobileGame=new TetrisMobileGame();}document.getElementById("tetrisStartOverlay").classList.remove("hidden")},50)}else{gameOverlay.classList.add("active");window.tetrisGame?window.tetrisGame.reset():window.tetrisGame=new TetrisGame()}});
         gameClose.addEventListener("click",()=>{gameOverlay.classList.remove("active");window.tetrisGame&&window.tetrisGame.pause()});
         tetrisMobileClose.addEventListener("click",()=>{tetrisMobileWrapper.classList.remove("active");window.tetrisMobileGame&&window.tetrisMobileGame.pause()});
         snakeCard.addEventListener("click",()=>{arcadeOverlay.classList.remove("active");snakeOverlay.classList.add("active");window.snakeGame?window.snakeGame.reset():window.snakeGame=new SnakeGame()});
