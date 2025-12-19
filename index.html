@@ -307,11 +307,18 @@
     // Secret arcade door - type "cortex" in name field and click Lets Talk
         // Secret arcade door - type "cortex" in name field and click Lets Talk
         const submitBtn=document.querySelector(".submit-btn");if(submitBtn){submitBtn.addEventListener("click",function(e){const nameField=document.getElementById("contactName");if(nameField&&nameField.value.toUpperCase().trim()==="CORTEX"){e.preventDefault();e.stopPropagation();arcadeOverlay.classList.add("active");nameField.value="";return false}})}
-        // Dev environment visual indicator
-        if (window.location.hostname === 'dev.cortextechnologies.ai') {
-            document.documentElement.style.setProperty('--bg-dark', '#2a2a2a');
-            document.documentElement.style.setProperty('--bg-card', '#3a3a3a');
-        }
+        // Dev environment visual indicator - checks actual server, not hostname
+        fetch(window.location.href, {method: 'HEAD'})
+            .then(r => {
+                const server = r.headers.get('server') || '';
+                if (server.toLowerCase().includes('nginx')) {
+                    // Served by nginx (Docker/dev) - gray background
+                    document.documentElement.style.setProperty('--bg-dark', '#2a2a2a');
+                    document.documentElement.style.setProperty('--bg-card', '#3a3a3a');
+                }
+                // GitHub.com = production, keep default black
+            })
+            .catch(() => {});
     </script>
 </body>
 </html>
