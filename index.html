@@ -311,8 +311,8 @@
         fetch(window.location.href, {method: 'HEAD'})
             .then(r => {
                 const server = r.headers.get('server') || '';
-                if (server.toLowerCase().includes('nginx')) {
-                    // Served by nginx (Docker/dev) - gray background
+                if (!server.toLowerCase().includes('github')) {
+                    // Not GitHub = dev environment - gray background
                     document.documentElement.style.setProperty('--bg-dark', '#2a2a2a');
                     document.documentElement.style.setProperty('--bg-card', '#3a3a3a');
                 }
