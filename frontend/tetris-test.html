@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Tetris Test</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; color: white; font-family: sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
+        .header { padding: 10px; text-align: center; background: #12121a; }
+        .game-area { flex: 1; display: flex; justify-content: center; align-items: center; padding: 10px; }
+        canvas { border: 2px solid #00d4ff; background: #000; }
+        .controls { display: flex; height: 120px; background: #12121a; }
+        .controls button { flex: 1; font-size: 24px; background: #1a1a2a; border: 1px solid #333; color: #00d4ff; }
+        .controls button:active { background: #00d4ff; color: #000; }
+        #log { position: fixed; bottom: 130px; left: 10px; right: 10px; background: rgba(0,0,0,0.8); padding: 5px; font-size: 10px; max-height: 100px; overflow: auto; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>Score: <span id="score">0</span> | Lines: <span id="lines">0</span></div>
+    </div>
+    <div class="game-area">
+        <canvas id="canvas" width="200" height="400"></canvas>
+    </div>
+    <div id="log"></div>
+    <div class="controls">
+        <button id="btnLeft">&#9664;</button>
+        <button id="btnRotate">&#8635;</button>
+        <button id="btnRight">&#9654;</button>
+        <button id="btnDrop">&#9660;</button>
+    </div>
+    <script>
+        function log(msg) {
+            var el = document.getElementById('log');
+            el.innerHTML = msg + '<br>' + el.innerHTML;
+            console.log(msg);
+        }
+
+        log('Script starting...');
+
+        var canvas = document.getElementById('canvas');
+        var ctx = canvas.getContext('2d');
+        var COLS = 10, ROWS = 20, SIZE = 20;
+        var board = [], piece = null, pieceX = 0, pieceY = 0, pieceColor = '';
+        var score = 0, lines = 0, running = false;
+        var lastTime = null, dropCounter = 0, dropInterval = 500;
+
+        var COLORS = ['#00d4ff', '#7b2cbf', '#00ff88', '#ff6b6b', '#ffd93d'];
+        var PIECES = [
+            [[1,1,1,1]],
+            [[1,1],[1,1]],
+            [[0,1,0],[1,1,1]],
+            [[1,0,0],[1,1,1]],
+            [[0,0,1],[1,1,1]]
+        ];
+
+        function init() {
+            log('init() called');
+            board = [];
+            for (var r = 0; r < ROWS; r++) {
+                board[r] = [];
+                for (var c = 0; c < COLS; c++) board[r][c] = 0;
+            }
+            score = 0; lines = 0;
+            spawn();
+            running = true;
+            lastTime = null;
+            dropCounter = 0;
+            log('Starting game loop');
+            requestAnimationFrame(loop);
+        }
+
+        function spawn() {
+            var idx = Math.floor(Math.random() * PIECES.length);
+            piece = PIECES[idx].map(function(row) { return row.slice(); });
+            pieceColor = COLORS[idx];
+            pieceX = Math.floor((COLS - piece[0].length) / 2);
+            pieceY = 0;
+            log('Spawned piece at ' + pieceX + ',' + pieceY);
+        }
+
+        function collides(dx, dy, p) {
+            p = p || piece;
+            for (var r = 0; r < p.length; r++) {
+                for (var c = 0; c < p[r].length; c++) {
+                    if (p[r][c]) {
+                        var x = pieceX + c + dx;
+                        var y = pieceY + r + dy;
+                        if (x < 0 || x >= COLS || y >= ROWS) return true;
+                        if (y >= 0 && board[y][x]) return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function lock() {
+            for (var r = 0; r < piece.length; r++) {
+                for (var c = 0; c < piece[r].length; c++) {
+                    if (piece[r][c]) {
+                        var y = pieceY + r;
+                        if (y >= 0) board[y][pieceX + c] = pieceColor;
+                    }
+                }
+            }
+        }
+
+        function rotate() {
+            var rot = [];
+            for (var i = 0; i < piece[0].length; i++) {
+                rot[i] = [];
+                for (var j = piece.length - 1; j >= 0; j--) {
+                    rot[i].push(piece[j][i]);
+                }
+            }
+            if (!collides(0, 0, rot)) piece = rot;
+        }
+
+        function clearLines() {
+            var cleared = 0;
+            for (var r = ROWS - 1; r >= 0; r--) {
+                var full = true;
+                for (var c = 0; c < COLS; c++) {
+                    if (!board[r][c]) { full = false; break; }
+                }
+                if (full) {
+                    board.splice(r, 1);
+                    board.unshift([]);
+                    for (var c2 = 0; c2 < COLS; c2++) board[0][c2] = 0;
+                    cleared++; r++;
+                }
+            }
+            if (cleared) {
+                lines += cleared;
+                score += cleared * 100;
+                document.getElementById('score').textContent = score;
+                document.getElementById('lines').textContent = lines;
+            }
+        }
+
+        function drop() {
+            if (!collides(0, 1)) {
+                pieceY++;
+            } else {
+                lock();
+                clearLines();
+                spawn();
+                if (collides(0, 0)) {
+                    running = false;
+                    log('GAME OVER');
+                }
+            }
+        }
+
+        function draw() {
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, 200, 400);
+
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            for (var c = 0; c <= COLS; c++) {
+                ctx.beginPath(); ctx.moveTo(c*SIZE, 0); ctx.lineTo(c*SIZE, 400); ctx.stroke();
+            }
+            for (var r = 0; r <= ROWS; r++) {
+                ctx.beginPath(); ctx.moveTo(0, r*SIZE); ctx.lineTo(200, r*SIZE); ctx.stroke();
+            }
+
+            for (var r = 0; r < ROWS; r++) {
+                for (var c = 0; c < COLS; c++) {
+                    if (board[r][c]) {
+                        ctx.fillStyle = board[r][c];
+                        ctx.fillRect(c*SIZE+1, r*SIZE+1, SIZE-2, SIZE-2);
+                    }
+                }
+            }
+
+            if (piece) {
+                ctx.fillStyle = pieceColor;
+                for (var r = 0; r < piece.length; r++) {
+                    for (var c = 0; c < piece[r].length; c++) {
+                        if (piece[r][c]) {
+                            ctx.fillRect((pieceX+c)*SIZE+1, (pieceY+r)*SIZE+1, SIZE-2, SIZE-2);
+                        }
+                    }
+                }
+            }
+        }
+
+        function loop(time) {
+            if (!running) return;
+            requestAnimationFrame(loop);
+
+            if (lastTime === null) lastTime = time;
+            var delta = time - lastTime;
+            lastTime = time;
+            if (delta > 100) delta = 16;
+
+            dropCounter += delta;
+            if (dropCounter > dropInterval) {
+                drop();
+                dropCounter = 0;
+            }
+            draw();
+        }
+
+        function addControl(id, fn) {
+            var el = document.getElementById(id);
+            el.addEventListener('touchstart', function(e) { e.preventDefault(); fn(); }, {passive: false});
+            el.addEventListener('click', fn);
+        }
+
+        addControl('btnLeft', function() { if (!collides(-1, 0)) pieceX--; log('LEFT'); });
+        addControl('btnRight', function() { if (!collides(1, 0)) pieceX++; log('RIGHT'); });
+        addControl('btnRotate', function() { rotate(); log('ROTATE'); });
+        addControl('btnDrop', function() { while (!collides(0, 1)) pieceY++; drop(); log('DROP'); });
+
+        log('Controls bound, calling init()');
+        init();
+    </script>
+</body>
+</html>
